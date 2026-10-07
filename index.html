@@ -3,28 +3,322 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome</title>
+  <title>Jatto3D — Ideas, made solid</title>
+  <meta name="description" content="Jatto3D turns ideas into precision 3D designs and prints.">
+  <meta name="theme-color" content="#07070d">
   <style>
+    :root {
+      --bg: #07070d;
+      --text: #ecebf5;
+      --muted: #9a98b3;
+      --a: #7c5cff;
+      --b: #19d3ff;
+      --c: #ff4fa3;
+      --card: rgba(255, 255, 255, 0.04);
+      --line: rgba(255, 255, 255, 0.09);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      color: #222;
-      text-align: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
     }
-    main { padding: 1rem; }
-    h1 { font-size: 2.5rem; margin: 0 0 0.5rem; }
-    p { color: #555; margin: 0; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ---------- background ---------- */
+    .aurora {
+      position: fixed; inset: 0; z-index: -2; overflow: hidden;
+    }
+    .aurora span {
+      position: absolute; width: 55vmax; height: 55vmax; border-radius: 50%;
+      filter: blur(90px); opacity: 0.45;
+      animation: drift 22s ease-in-out infinite alternate;
+    }
+    .aurora span:nth-child(1) { background: var(--a); top: -20vmax; left: -15vmax; }
+    .aurora span:nth-child(2) { background: var(--b); bottom: -25vmax; right: -15vmax; animation-delay: -7s; opacity: 0.3; }
+    .aurora span:nth-child(3) { background: var(--c); top: 30%; left: 40%; width: 35vmax; height: 35vmax; animation-delay: -14s; opacity: 0.22; }
+    @keyframes drift {
+      to { transform: translate(14vmax, 10vmax) scale(1.2) rotate(40deg); }
+    }
+    .grid-bg {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at 50% 30%, #000 10%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 10%, transparent 70%);
+    }
+
+    /* ---------- nav ---------- */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem clamp(1rem, 5vw, 3rem);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      background: rgba(7, 7, 13, 0.55);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo { font-weight: 800; letter-spacing: 0.02em; font-size: 1.2rem; }
+    .logo b { background: linear-gradient(90deg, var(--a), var(--b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    nav ul { display: flex; gap: 1.6rem; list-style: none; margin: 0; padding: 0; }
+    nav ul a { color: var(--muted); font-size: 0.95rem; transition: color .2s; }
+    nav ul a:hover { color: var(--text); }
+    @media (max-width: 640px) { nav ul { display: none; } }
+
+    /* ---------- hero ---------- */
+    .hero {
+      min-height: 100vh;
+      display: grid; grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 2rem;
+      padding: 7rem clamp(1.2rem, 6vw, 5rem) 4rem;
+      max-width: 1250px; margin: 0 auto;
+    }
+    @media (max-width: 880px) { .hero { grid-template-columns: 1fr; text-align: center; } }
+    .pill {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: .4rem .9rem; border: 1px solid var(--line); border-radius: 999px;
+      background: var(--card); color: var(--muted); font-size: .85rem;
+    }
+    .pill i { width: 8px; height: 8px; border-radius: 50%; background: #3dffa0; box-shadow: 0 0 10px #3dffa0; animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: .3; transform: scale(.8); } }
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem); line-height: 1.02; margin: 1.2rem 0; letter-spacing: -0.03em;
+    }
+    .grad {
+      background: linear-gradient(100deg, var(--a), var(--b), var(--c), var(--a));
+      background-size: 300% 100%;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: shine 8s linear infinite;
+    }
+    @keyframes shine { to { background-position: 300% 0; } }
+    .lead { color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.3rem); max-width: 34rem; margin: 0 0 2rem; }
+    @media (max-width: 880px) { .lead { margin-inline: auto; } }
+    .cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+    @media (max-width: 880px) { .cta { justify-content: center; } }
+    .btn {
+      position: relative; padding: .9rem 1.7rem; border-radius: 12px; font-weight: 600;
+      transition: transform .25s, box-shadow .25s;
+    }
+    .btn.primary {
+      background: linear-gradient(120deg, var(--a), var(--b));
+      color: #05050a; box-shadow: 0 8px 30px -8px var(--a);
+    }
+    .btn.primary:hover { transform: translateY(-3px); box-shadow: 0 14px 40px -8px var(--b); }
+    .btn.ghost { border: 1px solid var(--line); background: var(--card); }
+    .btn.ghost:hover { transform: translateY(-3px); border-color: var(--a); }
+
+    /* ---------- 3D cube ---------- */
+    .stage { perspective: 1100px; display: grid; place-items: center; min-height: 380px; }
+    .cube-wrap { transform-style: preserve-3d; transition: transform .15s ease-out; }
+    .cube {
+      --s: clamp(160px, 24vw, 240px);
+      width: var(--s); height: var(--s); position: relative; transform-style: preserve-3d;
+      animation: spin 18s linear infinite, float 6s ease-in-out infinite;
+    }
+    .cube div {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      border: 1.5px solid rgba(255,255,255,.35); border-radius: 10px;
+      background: linear-gradient(135deg, rgba(124,92,255,.28), rgba(25,211,255,.14));
+      backdrop-filter: blur(2px);
+      font-weight: 800; font-size: 2.2rem; color: rgba(255,255,255,.85);
+      box-shadow: inset 0 0 40px rgba(124,92,255,.35), 0 0 30px rgba(25,211,255,.15);
+    }
+    .cube .f { transform: translateZ(calc(var(--s) / 2)); }
+    .cube .b { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
+    .cube .r { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
+    .cube .l { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
+    .cube .t { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
+    .cube .u { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
+    @keyframes spin { from { transform: rotateX(-20deg) rotateY(0); } to { transform: rotateX(-20deg) rotateY(360deg); } }
+    @keyframes float { 50% { margin-top: -22px; } }
+    .shadow {
+      width: 180px; height: 24px; border-radius: 50%; margin-top: 3rem;
+      background: radial-gradient(closest-side, rgba(124,92,255,.5), transparent);
+      animation: shadow 6s ease-in-out infinite;
+    }
+    @keyframes shadow { 50% { transform: scale(.75); opacity: .5; } }
+
+    /* ---------- sections ---------- */
+    section { padding: 6rem clamp(1.2rem, 6vw, 5rem); max-width: 1250px; margin: 0 auto; }
+    .eyebrow { color: var(--b); text-transform: uppercase; letter-spacing: .18em; font-size: .78rem; font-weight: 700; }
+    h2 { font-size: clamp(2rem, 4.5vw, 3.2rem); line-height: 1.1; margin: .6rem 0 3rem; letter-spacing: -0.02em; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.4rem; }
+    .card {
+      position: relative; padding: 2rem; border-radius: 20px; background: var(--card);
+      border: 1px solid var(--line); overflow: hidden;
+      transition: transform .2s ease-out, border-color .3s;
+      transform-style: preserve-3d;
+    }
+    .card::before {
+      content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity .3s;
+      background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(124,92,255,.22), transparent 45%);
+    }
+    .card:hover { border-color: rgba(124,92,255,.6); }
+    .card:hover::before { opacity: 1; }
+    .icon {
+      width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--a), var(--b)); margin-bottom: 1.2rem;
+    }
+    .card h3 { margin: 0 0 .5rem; font-size: 1.25rem; }
+    .card p { margin: 0; color: var(--muted); }
+
+    /* stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.5rem; text-align: center; }
+    .stat b { display: block; font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 800; }
+    .stat span { color: var(--muted); }
+
+    /* marquee */
+    .marquee { overflow: hidden; border-block: 1px solid var(--line); padding: 1.2rem 0; max-width: none; }
+    .track { display: flex; gap: 3rem; width: max-content; animation: scroll 28s linear infinite; }
+    .track span { font-size: 1.6rem; font-weight: 700; color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,.35); white-space: nowrap; }
+    @keyframes scroll { to { transform: translateX(-50%); } }
+
+    /* contact */
+    .contact {
+      text-align: center; border-radius: 28px; border: 1px solid var(--line); margin-bottom: 4rem;
+      background: linear-gradient(135deg, rgba(124,92,255,.18), rgba(25,211,255,.1)); padding: 4.5rem 1.5rem;
+    }
+    .contact h2 { margin-bottom: 1rem; }
+    .contact p { color: var(--muted); margin: 0 auto 2rem; max-width: 32rem; }
+
+    footer { text-align: center; color: var(--muted); font-size: .9rem; padding: 2rem 1rem 3rem; }
+
+    /* ---------- reveal on scroll ---------- */
+    .reveal { opacity: 0; transform: translateY(36px); transition: opacity .8s ease, transform .8s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal:nth-child(2) { transition-delay: .12s; }
+    .reveal:nth-child(3) { transition-delay: .24s; }
+    .reveal:nth-child(4) { transition-delay: .36s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Hello, world</h1>
-    <p>This site is coming soon.</p>
-  </main>
+  <div class="aurora"><span></span><span></span><span></span></div>
+  <div class="grid-bg"></div>
+
+  <nav>
+    <a class="logo" href="#top">Jatto<b>3D</b></a>
+    <ul>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#numbers">Why us</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <header class="hero" id="top">
+    <div>
+      <span class="pill"><i></i> Now taking new projects</span>
+      <h1>Ideas, made <span class="grad">solid.</span></h1>
+      <p class="lead">From first sketch to finished part, Jatto3D designs and prints precision 3D work that looks as good as it works.</p>
+      <div class="cta">
+        <a class="btn primary" href="#contact">Start a project</a>
+        <a class="btn ghost" href="#services">See what we do</a>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="cube-wrap" id="cubeWrap">
+        <div class="cube">
+          <div class="f">J</div><div class="b">A</div><div class="r">T</div>
+          <div class="l">T</div><div class="t">O</div><div class="u">3D</div>
+        </div>
+      </div>
+      <div class="shadow"></div>
+    </div>
+  </header>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      <span>PROTOTYPES</span><span>CUSTOM PARTS</span><span>MODELS</span><span>PRINTING</span><span>DESIGN</span><span>ENCLOSURES</span>
+      <span>PROTOTYPES</span><span>CUSTOM PARTS</span><span>MODELS</span><span>PRINTING</span><span>DESIGN</span><span>ENCLOSURES</span>
+    </div>
+  </div>
+
+  <section id="services">
+    <div class="eyebrow reveal">What we do</div>
+    <h2 class="reveal">Everything between <span class="grad">idea</span> and object.</h2>
+    <div class="cards">
+      <div class="card reveal"><div class="icon">✏️</div><h3>3D Design</h3><p>Custom CAD modeling built around your needs, ready to print or ready to ship.</p></div>
+      <div class="card reveal"><div class="icon">🖨️</div><h3>Precision Printing</h3><p>Clean, strong, accurate prints in the materials that suit the job.</p></div>
+      <div class="card reveal"><div class="icon">⚡</div><h3>Rapid Prototyping</h3><p>Iterate fast. Hold your design in days, not weeks, and refine it with confidence.</p></div>
+      <div class="card reveal"><div class="icon">🎨</div><h3>Finishing</h3><p>Sanding, painting, and assembly so your piece arrives looking the part.</p></div>
+    </div>
+  </section>
+
+  <section id="numbers">
+    <div class="eyebrow reveal">Why Jatto3D</div>
+    <h2 class="reveal">Built on craft.</h2>
+    <div class="stats">
+      <div class="stat reveal"><b class="grad" data-to="500" data-suffix="+">0</b><span>Parts printed</span></div>
+      <div class="stat reveal"><b class="grad" data-to="48" data-suffix="h">0</b><span>Typical turnaround</span></div>
+      <div class="stat reveal"><b class="grad" data-to="0.1" data-suffix="mm" data-dec="1">0</b><span>Layer precision</span></div>
+      <div class="stat reveal"><b class="grad" data-to="100" data-suffix="%">0</b><span>Obsessed with detail</span></div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="contact reveal">
+      <div class="eyebrow">Let's build</div>
+      <h2>Got something in mind?</h2>
+      <p>Tell us what you're imagining. We'll help you turn it into something you can hold.</p>
+      <a class="btn primary" href="mailto:hello@jatto3d.com">hello@jatto3d.com</a>
+    </div>
+  </section>
+
+  <footer>© <span id="yr"></span> Jatto3D. All rights reserved.</footer>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // reveal on scroll
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // count-up stats
+    const counter = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const el = e.target, to = parseFloat(el.dataset.to), dec = +(el.dataset.dec || 0), suf = el.dataset.suffix || '';
+        const t0 = performance.now(), dur = 1600;
+        const tick = (t) => {
+          const p = Math.min((t - t0) / dur, 1), eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = (to * eased).toFixed(dec) + suf;
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        counter.unobserve(el);
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll('[data-to]').forEach(el => counter.observe(el));
+
+    // card spotlight + tilt
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const r = card.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        card.style.setProperty('--mx', x + 'px');
+        card.style.setProperty('--my', y + 'px');
+        const rx = ((y / r.height) - 0.5) * -8, ry = ((x / r.width) - 0.5) * 8;
+        card.style.transform = `perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+
+    // cube follows the mouse a little
+    const wrap = document.getElementById('cubeWrap');
+    window.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / innerWidth - 0.5) * 2, y = (e.clientY / innerHeight - 0.5) * 2;
+      wrap.style.transform = `rotateY(${x * 18}deg) rotateX(${y * -14}deg)`;
+    });
+  </script>
 </body>
 </html>
