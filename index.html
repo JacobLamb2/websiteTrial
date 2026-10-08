@@ -156,7 +156,32 @@
 
     footer { text-align: center; font-family: system-ui, sans-serif; color: #777; font-size: .8rem; padding: 0 1rem 3rem; }
 
-    canvas { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
+    #fx { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
+
+    /* ---------- game ---------- */
+    .game { max-width: 900px; margin: 0 auto; }
+    .arena {
+      position: relative; border: 3px solid var(--silver); border-radius: 18px; overflow: hidden;
+      box-shadow: 0 0 0 6px #000, 0 0 50px rgba(224,33,63,.45);
+      background: linear-gradient(180deg, #1a0a10, #3a0f1b 60%, #0b0b0f);
+      touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    #game { display: block; width: 100%; height: auto; aspect-ratio: 900 / 560; cursor: none; }
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between;
+      padding: .6rem 1rem; font-size: clamp(.9rem, 2.6vw, 1.4rem); letter-spacing: .08em;
+      color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none;
+    }
+    .hud b { color: var(--gold); }
+    .overlay {
+      position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .8rem;
+      text-align: center; background: rgba(0,0,0,.72); padding: 1rem;
+    }
+    .overlay[hidden] { display: none; }
+    .overlay h3 { margin: 0; font-size: clamp(1.8rem, 6vw, 3.4rem); text-transform: uppercase; text-shadow: 3px 3px 0 var(--red-d); }
+    .overlay p { margin: 0; font-family: system-ui, sans-serif; color: var(--silver); max-width: 30rem; }
+    .overlay .big { font-size: clamp(2.4rem, 8vw, 4.5rem); color: var(--gold); }
+    .overlay .big[hidden] { display: none; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -215,6 +240,20 @@
         <div><b id="h">0</b><span>hours</span></div>
         <div><b id="m">0</b><span>mins</span></div>
         <div><b id="s">0</b><span>secs</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="game" id="play">
+    <h2>Falcon Strike</h2>
+    <div class="arena" id="arena">
+      <canvas id="game" width="900" height="560" aria-label="Falcon Strike game"></canvas>
+      <div class="hud"><span>SCORE <b id="hScore">0</b></span><span>TIME <b id="hTime">30</b></span><span>BEST <b id="hBest">0</b></span></div>
+      <div class="overlay" id="overlay">
+        <h3 id="oTitle">Falcon Strike</h3>
+        <p id="oText">Move your falcon with the mouse, your finger, or arrow keys / WASD. Swoop on <b>Saints ⚜️</b> (10) and <b>Ravens 🐦‍⬛</b> (25). Grab 🏈 for +3 seconds. Rise up!</p>
+        <div class="big" id="oBig" hidden></div>
+        <button id="start">Kick Off 🏈</button>
       </div>
     </div>
   </section>
@@ -298,6 +337,163 @@
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) burst();
     });
     setTimeout(() => { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) burst(90); }, 600);
+
+    // ================= FALCON STRIKE =================
+    (function () {
+      const cv = document.getElementById('game'), g = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      const overlay = document.getElementById('overlay'), startBtn = document.getElementById('start');
+      const oTitle = document.getElementById('oTitle'), oText = document.getElementById('oText'), oBig = document.getElementById('oBig');
+      const hScore = document.getElementById('hScore'), hTime = document.getElementById('hTime'), hBest = document.getElementById('hBest');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      let best = 0;
+      try { best = +localStorage.getItem('falconStrikeBest') || 0; } catch (e) {}
+      hBest.textContent = best;
+
+      const DURATION = 30;
+      let state = 'idle', score, timeLeft, last, things, pops, spawnT, combo, shake;
+      const bird = { x: W / 2, y: H / 2, tx: W / 2, ty: H / 2, tilt: 0 };
+      const keys = {};
+
+      const KINDS = {
+        saint:    { glyph: '⚜️', pts: 10, r: 30, speed: [90, 170] },
+        raven:    { glyph: '🐦‍⬛', pts: 25, r: 26, speed: [190, 290] },
+        football: { glyph: '🏈', pts: 0,  r: 24, speed: [110, 190] },
+      };
+
+      function reset() {
+        score = 0; timeLeft = DURATION; things = []; pops = []; spawnT = 0; combo = 0; shake = 0;
+        bird.x = bird.tx = W / 2; bird.y = bird.ty = H / 2;
+        hScore.textContent = 0; hTime.textContent = DURATION;
+      }
+
+      function spawn() {
+        const roll = Math.random();
+        const kind = roll < 0.12 ? 'football' : roll < 0.42 ? 'raven' : 'saint';
+        const k = KINDS[kind], fromLeft = Math.random() < 0.5;
+        const sp = k.speed[0] + Math.random() * (k.speed[1] - k.speed[0]);
+        things.push({
+          kind, x: fromLeft ? -40 : W + 40, y: 70 + Math.random() * (H - 140),
+          vx: (fromLeft ? 1 : -1) * sp, vy: (Math.random() - .5) * 90,
+          wob: Math.random() * 6, r: k.r,
+        });
+      }
+
+      function pop(x, y, text, color) { pops.push({ x, y, text, color, life: 0 }); }
+
+      function begin() {
+        reset(); state = 'play'; overlay.hidden = true; last = performance.now();
+        requestAnimationFrame(frame);
+      }
+
+      function end() {
+        state = 'over';
+        const isBest = score > best;
+        if (isBest) { best = score; hBest.textContent = best; try { localStorage.setItem('falconStrikeBest', best); } catch (e) {} }
+        oTitle.textContent = score >= 300 ? 'Absolute Whooping' : score >= 150 ? 'Solid Whooping' : 'Saints Survived';
+        oText.textContent = isBest ? 'New personal best! The Ravens are shaking.' : 'Run it back. The Ravens are next.';
+        oBig.hidden = false; oBig.textContent = score + ' pts';
+        startBtn.textContent = 'Run It Back 🦅';
+        overlay.hidden = false;
+        if (score >= 150 && !reduce) burst(120);
+      }
+
+      function frame(now) {
+        if (state !== 'play') return;
+        const dt = Math.min((now - last) / 1000, 0.05); last = now;
+
+        // keyboard steering
+        const spd = 520 * dt;
+        if (keys.ArrowLeft || keys.a) bird.tx -= spd;
+        if (keys.ArrowRight || keys.d) bird.tx += spd;
+        if (keys.ArrowUp || keys.w) bird.ty -= spd;
+        if (keys.ArrowDown || keys.s) bird.ty += spd;
+        bird.tx = Math.max(30, Math.min(W - 30, bird.tx));
+        bird.ty = Math.max(40, Math.min(H - 30, bird.ty));
+
+        const px = bird.x;
+        bird.x += (bird.tx - bird.x) * Math.min(1, dt * 12);
+        bird.y += (bird.ty - bird.y) * Math.min(1, dt * 12);
+        bird.tilt += (Math.max(-.5, Math.min(.5, (bird.x - px) * .05)) - bird.tilt) * .2;
+
+        // spawn rate ramps up as time runs down
+        spawnT -= dt;
+        if (spawnT <= 0) { spawn(); spawnT = Math.max(0.15, 0.28 + Math.random() * 0.4 - (DURATION - timeLeft) * 0.004); }
+
+        for (let i = things.length - 1; i >= 0; i--) {
+          const t = things[i];
+          t.wob += dt * 4; t.x += t.vx * dt; t.y += (t.vy + Math.sin(t.wob) * 40) * dt;
+          if (t.y < 50 || t.y > H - 20) t.vy *= -1;
+          if (t.x < -80 || t.x > W + 80) { if (t.kind !== 'football') combo = 0; things.splice(i, 1); continue; }
+          if (Math.hypot(t.x - bird.x, t.y - bird.y) < t.r + 28) {
+            if (t.kind === 'football') { timeLeft = Math.min(DURATION + 10, timeLeft + 3); pop(t.x, t.y, '+3s', '#6dffb0'); }
+            else {
+              combo++; const gain = KINDS[t.kind].pts * (combo >= 5 ? 2 : 1); score += gain;
+              pop(t.x, t.y, '+' + gain + (combo >= 5 ? ' 🔥' : ''), t.kind === 'raven' ? '#b9a2ff' : '#ffd34e');
+              shake = reduce ? 0 : 6; hScore.textContent = score;
+            }
+            things.splice(i, 1);
+          }
+        }
+
+        timeLeft -= dt; hTime.textContent = Math.max(0, Math.ceil(timeLeft));
+        if (timeLeft <= 0) { draw(dt); end(); return; }
+        draw(dt); requestAnimationFrame(frame);
+      }
+
+      function emoji(glyph, x, y, size, rot, flip) {
+        g.save(); g.translate(x, y); g.rotate(rot || 0); if (flip) g.scale(-1, 1);
+        g.font = size + 'px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(glyph, 0, 0); g.restore();
+      }
+
+      function draw(dt) {
+        dt = dt || 0;
+        g.save();
+        if (shake > 0) { g.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake); shake = Math.max(0, shake - 40 * dt); }
+        g.clearRect(-10, -10, W + 20, H + 20);
+
+        g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 2;
+        for (let x = 0; x < W; x += 90) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+
+        for (const t of things) emoji(KINDS[t.kind].glyph, t.x, t.y, t.r * 2, 0, t.vx < 0);
+
+        if (combo >= 2) {
+          g.fillStyle = '#ffd34e'; g.font = '22px Impact, sans-serif'; g.textAlign = 'left';
+          g.fillText('COMBO x' + combo + (combo >= 5 ? '  (2x points!)' : ''), 16, H - 18);
+        }
+
+        g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(bird.x, bird.y + 34, 22, 6, 0, 0, 7); g.fill();
+        emoji('🦅', bird.x, bird.y, 64, bird.tilt);
+
+        for (let i = pops.length - 1; i >= 0; i--) {
+          const p = pops[i]; p.life += dt; p.y -= 50 * dt;
+          if (p.life > .8) { pops.splice(i, 1); continue; }
+          g.globalAlpha = 1 - p.life / .8; g.fillStyle = p.color; g.font = '28px Impact, sans-serif'; g.textAlign = 'center';
+          g.fillText(p.text, p.x, p.y); g.globalAlpha = 1;
+        }
+        g.restore();
+      }
+
+      // ---- input ----
+      function setTarget(clientX, clientY) {
+        const r = cv.getBoundingClientRect();
+        bird.tx = (clientX - r.left) * (W / r.width);
+        bird.ty = (clientY - r.top) * (H / r.height);
+      }
+      cv.addEventListener('pointerdown', e => setTarget(e.clientX, e.clientY));
+      cv.addEventListener('pointermove', e => setTarget(e.clientX, e.clientY));
+      addEventListener('keydown', e => {
+        const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+        if (state === 'play' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(k)) e.preventDefault();
+        keys[k] = true;
+      });
+      addEventListener('keyup', e => { keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false; });
+      startBtn.addEventListener('click', begin);
+
+      reset(); draw(0);
+    })();
   </script>
 </body>
 </html>
